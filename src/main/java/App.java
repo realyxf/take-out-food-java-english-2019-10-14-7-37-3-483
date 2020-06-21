@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.List;
 
 /*
@@ -14,7 +15,122 @@ public class App {
 
     public String bestCharge(List<String> inputs) {
         //TODO: write code here
+        String str=("============= Order details =============\n");
+        String liststr = "";//order inputs(list) -> liststr(string) for easy split
 
-        return null;
+        for(int i=0; i<inputs.size(); i++){
+            liststr += (inputs.get(i) + " x ");
+        }
+
+        //split the inputs
+        String[] buff = liststr.split(" x ");
+        String[] idlist = new String[inputs.size()];//item id list
+        int[] numlist = new int[inputs.size()];//item purchase quantity
+        int a=0;//index of idlist & numlist
+        for (int i=0; i<buff.length; i++){
+            idlist[a] = buff[i];
+            i += 1;
+            numlist[a] = Integer.parseInt(buff[i]);
+            a++;
+        }
+
+        //gets the appropriate name and price
+        String[] namelist = new String[inputs.size()];//item name list
+        int[] pricelist = new int[inputs.size()];//item price quantity
+        int b=0;
+        int originalprice=0;//原价
+        for (int x=0; x<idlist.length; x++){
+            for (int y=0; y<itemRepository.findAll().size(); y++){
+                if(idlist[x].equals(itemRepository.findAll().get(y).getId())){
+                    namelist[b] = itemRepository.findAll().get(y).getName();
+                    pricelist[b] = (int)itemRepository.findAll().get(y).getPrice();
+                    str += (namelist[b] + " x " + numlist[b] + " = " + (numlist[b]*pricelist[b]) + " yuan\n");
+                    originalprice += numlist[b]*pricelist[b];
+                    b++;
+                }
+            }
+        }
+        str += "-----------------------------------\n";
+        int total1=Integer.MAX_VALUE;;//BUY_30_SAVE_6_YUAN
+        int total2=Integer.MAX_VALUE;;//50%_DISCOUNT_ON_SPECIFIED_ITEMS
+        int sava1=0;//choose one sava money
+        int sava2=0;//choose two sava money
+
+
+        //BUY_30_SAVE_6_YUAN
+        if(originalprice>30){
+            total1=originalprice-6;
+            sava1=6;
+        }
+
+        //50%_DISCOUNT_ON_SPECIFIED_ITEMS
+        boolean flag=false;//50% discount on specified item
+        String[] halflist=new String[salesPromotionRepository.findAll().get(1).getRelatedItems().size()];
+        String halfinputs = "";
+        for (int i=0; i<salesPromotionRepository.findAll().get(1).getRelatedItems().size(); i++){
+            halflist[i]=salesPromotionRepository.findAll().get(1).getRelatedItems().get(i);
+        }
+        for (int i=0; i<idlist.length; i++){
+            if(Arrays.asList(halflist).contains(idlist[i])){
+                pricelist[i] /= 2;
+                halfinputs += (namelist[i] + "，");
+                flag=true;
+            }
+        }
+        if(flag==true){
+            total2=0;
+            for (int i=0; i<numlist.length; i++){
+                total2 += numlist[i]*pricelist[i];
+            }
+            sava2=originalprice-total2;
+        }
+
+        //choose one
+        if(total1<originalprice & total1<=total2){
+            str += "Promotion used:\n";
+            str += ("满30减6 yuan，saving " + sava1 + " yuan\n");
+            str += "-----------------------------------\n";
+            str += ("Total：" + total1 + " yuan\n");
+        }
+
+        //choose two
+        else if(total2<originalprice & total2<total1){
+            str += "Promotion used:\n";
+            str += ("Half price for certain dishes (" + (halfinputs.substring(0,halfinputs.length()-1)) + ")，saving " + sava2 + " yuan\n");
+            str += "-----------------------------------\n";
+            str += ("Total：" + total2 + " yuan\n");
+        }
+
+        else{
+            str += ("Total：" + originalprice + " yuan\n");
+        }
+
+        str += "===================================";
+
+        //str += "Promotion used:\n";
+        //（sum1 sum2） total save originalprice
+        //displayName relatedItems（半价菜名单）
+
+
+        //+String.valueOf(originalprice)
+        return str;
     }
 }
+
+//                "Promotion used:\n" +
+//                "Half price for certain dishes (Braised chicken，Cold noodles)，saving 13 yuan\n" +
+//                "-----------------------------------\n" +
+//                "Total：25 yuan\n" +
+//                "===================================")
+//————————————————————————————————————————————————————————————————————————————————————————————
+//                "Promotion used:\n" +
+//                "满30减6 yuan，saving 6 yuan\n" +
+//                "-----------------------------------\n" +
+//                "Total：26 yuan\n" +
+//                "==================================="));
+//————————————————————————————————————————————————————————————————————————————————————————————
+//("============= Order details =============\n" +
+//                "Chinese hamburger x 4 = 24 yuan\n" +
+//                "-----------------------------------\n" +
+//                "Total：24 yuan\n" +
+//                "===================================")
